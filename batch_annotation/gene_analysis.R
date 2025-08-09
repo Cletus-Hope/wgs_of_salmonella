@@ -1,0 +1,54 @@
+
+#install.packages("UpSetR")
+
+library(UpSetR)
+#output intersection gene file
+outFile="intersectGenes.txt"        
+#outputimage
+outPic="upset2.pdf"                  
+#seting working dir
+setwd("~/WGS/Rodent genes in txt/WGS") 
+
+#retrieve all files from directory
+files=dir()                          
+#Extracting all files ending with .txt
+files=grep("txt$",files,value=T)     
+geneList=list()
+
+#Saving the genetic informaton to geneList
+for(i in 1:length(files)){
+    inputFile=files[i]
+    if(inputFile==outFile){next}
+    #read input file
+    rt=read.table(inputFile,header=F)         
+    #extract gene names
+    geneNames=as.vector(rt[,1])               
+    #removing spaces at the begin and end
+    geneNames=gsub("^ | $","",geneNames)      
+    #unique gene selection, unique gene list
+    uniqGene=unique(geneNames)                
+    header=unlist(strsplit(inputFile,"\\.|\\-"))
+    geneList[[header[1]]]=uniqGene
+    uniqLength=length(uniqGene)
+    print(paste(header[1],uniqLength,sep=" "))
+}
+
+#draw upset diagram
+upsetData=fromList(geneList)
+pdf(file=outPic,onefile = FALSE,width=9,height=6)
+upset(upsetData,
+      nsets = length(geneList),               
+      nintersects = 50,                       
+      order.by = "freq",                      
+      show.numbers = "yes",                   
+      number.angles = 20,                     
+      point.size = 2,                         
+      matrix.color="red",                     
+      line.size = 0.8,                        
+      mainbar.y.label = "Gene intersections", 
+      sets.x.label = "Gene count")
+dev.off()
+
+#saving intersection file 
+intersectGenes=Reduce(intersect,geneList)
+write.table(file=outFile,intersectGenes,sep="\t",quote=F,col.names=F,row.names=F)
